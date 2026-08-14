@@ -1,0 +1,13 @@
+<template>
+    <!-- 二级路由出口 -->
+    <RouterView :key="router.currentRoute.value.fullPath"/>
+</template>
+
+<script lang='ts' setup>
+import router from '@/router';
+
+</script>
+
+<style lang="less" scoped>
+@import url('main.less');
+</style>
