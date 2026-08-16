@@ -7,7 +7,7 @@ const router = createRouter({
     {
       path: "/front",
       name: "Front",
-      component: () => import("../views/front/index.vue"),
+      component: () => import("../views/front/main.vue"),
       children: [
         {
           path: "index",
@@ -20,7 +20,43 @@ const router = createRouter({
       path: "/mis",
       name: "Mis",
       component: () => import("../views/mis/main.vue"),
-      children: [],
+      children: [
+        {
+          path: "home",
+          name: "MisHome",
+          component: () => import("@/views/mis/home.vue"),
+          meta: {
+            title: "首页",
+          },
+        },
+        {
+          path: "dept",
+          name: "MisDept",
+          component: () => import("@/views/mis/dept.vue"),
+          meta: {
+            title: "部门管理",
+            isTab: true,
+          },
+        },
+        {
+          path: "role",
+          name: "MisRole",
+          component: () => import("@/views/mis/role.vue"),
+          meta: {
+            title: "角色管理",
+            isTab: true,
+          },
+        },
+        {
+          path: "user",
+          name: "MisUser",
+          component: () => import("@/views/mis/user.vue"),
+          meta: {
+            title: "用户管理",
+            isTab: true,
+          },
+        },
+      ],
     },
     {
       path: "/mis/login",
@@ -50,7 +86,7 @@ router.beforeEach((to, from) => {
     return true;
   }
 
-  // MIS 端（除了登录页，其他都要登录）
+  //MIS 端（除了登录页，其他都要登录）
   if (path.startsWith("/mis")) {
     if (isLoggedIn) {
       return true;
