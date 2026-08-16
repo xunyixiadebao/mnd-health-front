@@ -7,7 +7,7 @@ const router = createRouter({
     {
       path: "/front",
       name: "Front",
-      component: () => import("../views/front/index.vue"),
+      component: () => import("../views/front/main.vue"),
       children: [
         {
           path: "index",
@@ -20,7 +20,43 @@ const router = createRouter({
       path: "/mis",
       name: "Mis",
       component: () => import("../views/mis/main.vue"),
-      children: [],
+      children: [
+        {
+          path: "home",
+          name: "MisHome",
+          component: () => import("@/views/mis/home.vue"),
+          meta: {
+            title: "首页",
+          },
+        },
+        {
+          path: "dept",
+          name: "MisDept",
+          component: () => import("@/views/mis/dept.vue"),
+          meta: {
+            title: "部门管理",
+            isTab: true,
+          },
+        },
+        {
+          path: "role",
+          name: "MisRole",
+          component: () => import("@/views/mis/role.vue"),
+          meta: {
+            title: "角色管理",
+            isTab: true,
+          },
+        },
+        {
+          path: "user",
+          name: "MisUser",
+          component: () => import("@/views/mis/user.vue"),
+          meta: {
+            title: "用户管理",
+            isTab: true,
+          },
+        },
+      ],
     },
     {
       path: "/mis/login",
@@ -39,23 +75,24 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, from) => {
   const token = localStorage.getItem("token");
-  // 可能调用permissions的split方法，所以添加 || ''
   const permissions = localStorage.getItem("permissions") || "";
-  // !! 在JS中可以将非布尔值转换为布尔值，等同于Boolean()
-  // !! 在这里不写也行。写上更明确结果是布尔值。
   const isLoggedIn = !!token && !!permissions;
   const path = to.path;
 
   // 白名单：直接放行
   if (path === "/mis/login" || path === "/front/index") {
-    return next();
+    return true;
   }
 
-  // MIS 端（除了登录页，其他都要登录）
+  //MIS 端（除了登录页，其他都要登录）
   if (path.startsWith("/mis")) {
-    return isLoggedIn ? next() : next({ path: "/mis/login" });
+    if (isLoggedIn) {
+      return true;
+    } else {
+      return { path: "/mis/login" };
+    }
   }
 
   // 业务端：客户详情和商品快照需要登录（其他都不需要登录）
@@ -63,11 +100,15 @@ router.beforeEach((to, from, next) => {
     path.startsWith("/front/customer") ||
     path.startsWith("/front/goods_snapshot")
   ) {
-    return isLoggedIn ? next() : next({ path: "/front/index" });
+    if (isLoggedIn) {
+      return true;
+    } else {
+      return { path: "/front/index" };
+    }
   }
 
   // 其他页面：放行
-  return next();
+  return true;
 });
 
 export default router;
