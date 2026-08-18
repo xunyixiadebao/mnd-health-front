@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.djiankang.db.mapper.SysUserMapper">
+
+    <select id="selectPermissionsByUserId" resultType="String">
+        select
+            distinct p.permission_code
+        from
+            sys_user u
+                join
+            sys_role r
+            on
+                json_contains(u.role_ids, cast(r.role_id as json))
+                join
+            sys_permission p
+            on
+                json_contains(r.permission_ids, cast(p.permission_id as json))
+        where
+            u.user_id=#{userId} and u.user_status=1;
+    </select>
+    <select id="findUserIdByCredentials" resultType="Integer">
+        select
+            user_id
+        from
+            sys_user
+        where
+            username = #{username}
+          and
+            password = #{password}
+          and
+            user_status = 1
+        limit 1
+    </select>
+</mapper>
