@@ -1,3 +1,6 @@
+@use "sass:color";
+@use "variables";
+
 *,
 *:before,
 *:after {
@@ -12,11 +15,11 @@ body {
 	background-color: #fff;
 }
 a {
-	color: mix(#fff, $--color-primary, 20%);
+	color: color.mix(#fff, variables.$color-primary, 20%);
 	text-decoration: none;
 	&:focus,
 	&:hover {
-		color: $--color-primary;
+		color: variables.$color-primary;
 		text-decoration: underline;
 	}
 }
@@ -126,7 +129,7 @@ img {
 	height: 50px;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 	// 背景色是引用的variables.scss文件中的变量：蓝色
-	background-color: $navbar--background-color;
+	background-color: variables.$navbar--background-color;
 
 	&--inverse {
 		.site-navbar__body {
@@ -139,12 +142,12 @@ img {
 				&:focus,
 				&:hover {
 					color: #fff;
-					background-color: mix(#000, $navbar--background-color, 15%);
+					background-color: color.mix(#000, variables.$navbar--background-color, 15%);
 				}
 			}
 			> .el-menu-item.is-active,
 			> .el-submenu.is-active > .el-submenu__title {
-				border-bottom-color: mix(#fff, $navbar--background-color, 85%);
+				border-bottom-color: color.mix(#fff, variables.$navbar--background-color, 85%);
 			}
 			.el-menu-item i,
 			.el-submenu__title i,
@@ -153,7 +156,7 @@ img {
 			}
 		}
 		.el-menu--popup-bottom-start {
-			background-color: $navbar--background-color;
+			background-color: variables.$navbar--background-color;
 		}
 	}
 
@@ -273,26 +276,26 @@ img {
 
 	&--dark,
 	&--dark-popper {
-		background-color: $sidebar--background-color-dark;
+		background-color: variables.$sidebar--background-color-dark;
 		.site-sidebar__menu.el-menu,
 		> .el-menu--popup {
-			background-color: $sidebar--background-color-dark;
+			background-color: variables.$sidebar--background-color-dark;
 			.el-menu-item,
 			.el-submenu > .el-submenu__title {
-				color: $sidebar--color-text-dark;
+				color: variables.$sidebar--color-text-dark;
 				&:focus,
 				&:hover {
-					color: mix(#fff, $sidebar--color-text-dark, 50%);
-					background-color: mix(#fff, $sidebar--background-color-dark, 2.5%);
+					color: color.mix(#fff, variables.$sidebar--color-text-dark, 50%);
+					background-color: color.mix(#fff, variables.$sidebar--background-color-dark, 2.5%);
 				}
 			}
 			.el-menu,
 			.el-submenu.is-opened {
-				background-color: mix(#000, $sidebar--background-color-dark, 15%);
+				background-color: color.mix(#000, variables.$sidebar--background-color-dark, 15%);
 			}
 			.el-menu-item.is-active,
 			.el-submenu.is-active > .el-submenu__title {
-				color: mix(#fff, $sidebar--color-text-dark, 80%);
+				color: color.mix(#fff, variables.$sidebar--color-text-dark, 80%);
 			}
 		}
 		// .icon-svg {
@@ -342,7 +345,7 @@ img {
 		padding-top: 50px;
 		margin-left: 230px;
 		min-height: 100%;
-		background: $content--background-color;
+		background: variables.$content--background-color;
 	}
 	&--tabs {
 		padding: 55px 0 0;
@@ -375,7 +378,7 @@ img {
 				padding: 0 12px;
 				font-size: 16px;
 				line-height: 40px;
-				background-color: $content--background-color;
+				background-color: variables.$content--background-color;
 				cursor: pointer;
 				.el-icon--right {
 					margin-left: 0;
