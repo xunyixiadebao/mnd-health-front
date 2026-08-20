@@ -324,6 +324,52 @@
       </main>
     </div>
   </div>
+  <el-dialog title="提示" v-model="dialog.visible" width="25%">
+    <el-form
+      :model="dialog.dataForm"
+      :rules="dialog.dataRule"
+      ref="dialogForm"
+      label-width="80px"
+    >
+      <el-form-item label="原密码" prop="password">
+        <el-input
+          type="password"
+          v-model="dialog.dataForm.password"
+          size="default"
+          maxlength="20"
+          clearable
+        />
+      </el-form-item>
+      <el-form-item label="新密码" prop="newPassword">
+        <el-input
+          type="password"
+          v-model="dialog.dataForm.newPassword"
+          size="default"
+          maxlength="20"
+          clearable
+        />
+      </el-form-item>
+      <el-form-item label="确认密码" prop="confirmPassword">
+        <el-input
+          type="password"
+          v-model="dialog.dataForm.confirmPassword"
+          size="default"
+          maxlength="20"
+          clearable
+        />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button size="default" @click="dialog.visible = false"
+          >取消</el-button
+        >
+        <el-button type="primary" size="default" @click="dataFormSubmit"
+          >确定</el-button
+        >
+      </span>
+    </template>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -336,6 +382,7 @@ import {
   getCurrentInstance,
   onMounted,
   watch,
+  nextTick,
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { isAuth } from "@/utils/auth";
@@ -379,14 +426,40 @@ const user = reactive({
 });
 
 // 退出功能
-const logout = () => {};
+const logout = async () => {
+  try {
+    // 发送ajax post请求退出系统
+    const response = await axios.post("/api/mis/user/logout", null, {
+      headers: {
+        satoken: localStorage.getItem("token"),
+      },
+    });
+    if (response.data.code === 200) {
+      // 退出成功，清空localStorage中的数据
+      localStorage.removeItem("token");
+      localStorage.removeItem("permissions");
+      // 跳转到登录页面
+      router.push({ name: "MisLogin" });
+    }
+  } catch {
+    ElMessage.error("网络异常，稍后再试");
+  }
+};
 
 // 修改密码
-const updatePassword = () => {};
+const dialogForm = ref();
+const updatePassword = async() => {
+  // 显示控件
+  dialog.visible = true;
+  // 等待 Vue 完成 DOM 更新后再执行后续代码
+  await nextTick();
+  // 重置表单
+  dialogForm.value.resetFields();
+};
 
 // 折叠/展开
 function handleSwitch() {
-    sidebar.sidebarFold = !sidebar.sidebarFold;
+  sidebar.sidebarFold = !sidebar.sidebarFold;
 }
 
 import { type RouteLocationNormalized } from "vue-router";
@@ -478,7 +551,13 @@ window.onresize = () => {
   loadSiteContentViewHeight();
   // 当用户选中某个tab页的时候加载该tab页
 };
-import type { TabsPaneContext ,TabPaneName} from "element-plus";
+import {
+  type TabsPaneContext,
+  type TabPaneName,
+  ElMessage,
+  type FormItemRule,
+} from "element-plus";
+import axios from "axios";
 
 function selectedTabHandle(tab: TabsPaneContext) {
   router.push({
@@ -486,21 +565,106 @@ function selectedTabHandle(tab: TabsPaneContext) {
   });
 }
 // 当用户点击关闭tab时执行回调函数
- function removeTabHandle(tabName: TabPaneName) {
-    siteContent.mainTabs = siteContent.mainTabs.filter(
-      (item) => item.name !== tabName,
-    );
+function removeTabHandle(tabName: TabPaneName) {
+  siteContent.mainTabs = siteContent.mainTabs.filter(
+    (item) => item.name !== tabName,
+  );
 
-    if (siteContent.mainTabs.length > 0) {
-      const tab = siteContent.mainTabs[siteContent.mainTabs.length
-      - 1]!;
-      siteContent.mainTabsActiveName = tab.name;
-      router.push({ name: tab.name });
-    } else {
-      siteContent.mainTabsActiveName = "";
-      router.push({ name: "MisHome" });
+  if (siteContent.mainTabs.length > 0) {
+    const tab = siteContent.mainTabs[siteContent.mainTabs.length - 1]!;
+    siteContent.mainTabsActiveName = tab.name;
+    router.push({ name: tab.name });
+  } else {
+    siteContent.mainTabsActiveName = "";
+    router.push({ name: "MisHome" });
+  }
+}
+//修改密码
+
+const validateConfirmPassword = (
+  rule: FormItemRule,
+  value: string,
+  callback: Function,
+) => {
+  // value是确认密码
+  if (value != dialog.dataForm.newPassword) {
+    // 通过调用回调函数来通知表单验证系统，表单验证系统根据结果动态更新UI。
+    callback(new Error("两次输入的密码不一致"));
+  } else {
+    // 通过调用回调函数来通知表单验证系统，表单验证系统根据结果动态更新UI。
+    // 函数不传参数表示验证通过。
+    callback();
+  }
+};
+const dataFormSubmit = async () => {
+  // 提交表单前，再次校验数据是否合法（校验是异步的）
+  const valid = await dialogForm.value.validate();
+  if (valid) {
+    try {
+      // 准备数据
+      const sendData = {
+        oldPassword: dialog.dataForm.password,
+        newPassword: dialog.dataForm.newPassword,
+      };
+      // 准备配置
+      const config = {
+        headers: {
+          satoken: localStorage.getItem("token"),
+        },
+      };
+      // 发送ajax put请求
+      const response = await axios.put(
+        "/api/mis/user/password",
+        sendData,
+        config,
+      );
+      if (response.data.code === 200) {
+        ElMessage.success(response.data.msg || "修改成功");
+        dialog.visible = false;
+        localStorage.removeItem("token")
+        localStorage.removeItem("permissions")
+        router.push({name: "MisLogin"})
+      } else {
+        ElMessage.error(response.data.msg || "修改失败");
+      }
+    } catch {
+      ElMessage.error("网络异常，稍后再试");
     }
   }
+};
+const dialog = reactive({
+  visible: false,
+  dataForm: {
+    password: "",
+    newPassword: "",
+    confirmPassword: "",
+  },
+  dataRule: {
+    password: [
+      {
+        required: true,
+        pattern: "^[a-zA-Z0-9]{6,20}$",
+        message: "密码格式错误",
+      },
+    ],
+    newPassword: [
+      {
+        required: true,
+        pattern: "^[a-zA-Z0-9]{6,20}$",
+        message: "密码格式错误",
+      },
+    ],
+    confirmPassword: [
+      {
+        required: true,
+        pattern: "^[a-zA-Z0-9]{6,20}$",
+        message: "密码格式错误",
+      },
+      // blur失去焦点则调用validateConfirmPassword进行验证
+      { validator: validateConfirmPassword, trigger: "blur" },
+    ],
+  },
+});
 
 </script>
 

@@ -27,7 +27,7 @@
     </div>
 </template>
 
-<script></script>
+<script setup lang="ts"></script>
 
 <style lang="less" scoped="scoped">
     @import url('home.less');

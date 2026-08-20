@@ -39,7 +39,7 @@
             ></el-input>
           </div>
           <div class="row">
-            <el-button type="primary" class="btn" size="large">
+            <el-button type="primary" class="btn" size="large" @click="login">
               登录系统
             </el-button>
           </div>
@@ -50,16 +50,69 @@
 </template>
 
 <script lang="ts" setup>
-import { getCurrentInstance, reactive } from "vue"
+import { reactive } from "vue"
 import { User, Lock } from '@element-plus/icons-vue'
 
-const { proxy } = getCurrentInstance()!;
+
+
 
 // 登录数据
 const loginInfo = reactive({
-  username: null,
-  password: null,
+  username: "",
+  password: "",
 });
+
+import { isUsername, isPassword } from "@/utils/validate";
+import { ElMessage } from "element-plus";
+import axios from "axios";
+import router from "@/router";
+
+async function login() {
+  const username = loginInfo.username;
+  const password = loginInfo.password;
+  if (!isUsername(username)) {
+    // 验证用户名是否有效
+    ElMessage({
+      type: "error",
+      message: "用户名格式错误",
+      duration: 1200,
+    });
+  } else if (!isPassword(password)) {
+    // 验证密码是否有效
+    ElMessage({
+      type: "error",
+      message: "密码格式错误",
+      duration: 1200,
+    });
+  } else {
+    try {
+      // 发送ajax post请求登录
+      const response = await axios.post("/api/mis/user/login", {
+        username,
+        password,
+      });
+      const result = response.data;
+      if (result.code === 200) {
+        // 登录成功
+        const token = result.data.token;
+        const permissions = JSON.stringify(result.data.permissions);
+        localStorage.setItem("token", token);
+        localStorage.setItem("permissions", permissions);
+        router.push({ name: "MisHome" });
+      } else {
+        // 登录失败
+        ElMessage({
+          type: "error",
+          message: "登录失败",
+          duration: 1200,
+        });
+      }
+    } catch {
+      ElMessage.error("网络异常，请稍后再试");
+    }
+  }
+}
+
 </script>
 
 <style lang="less" scoped>
