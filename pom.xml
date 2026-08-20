@@ -242,12 +242,12 @@
             </exclusions>
             <scope>test</scope>
         </dependency>
-
         <dependency>
-            <groupId>com.github.xingfudeshi</groupId>
+            <groupId>com.baizhukui</groupId>
             <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
-            <version>4.6.0</version>
+            <version>5.3.0</version>
         </dependency>
+
     </dependencies>
 
     <!--

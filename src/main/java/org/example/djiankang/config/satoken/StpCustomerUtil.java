@@ -10,6 +10,7 @@ import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.parameter.SaLoginParameter;
 import cn.dev33.satoken.stp.parameter.SaLogoutParameter;
+import lombok.Getter;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -32,7 +33,13 @@ public class StpCustomerUtil {
 
     /**
      * 底层使用的 StpLogic 对象
+     * -- GETTER --
+     *  获取 StpLogic 对象
+     *
+     * @return /
+
      */
+    @Getter
     public static StpLogic stpLogic = new StpLogic(TYPE);
 
     /**
@@ -63,15 +70,6 @@ public class StpCustomerUtil {
 
         // 3、$$ 发布事件：更新了 stpLogic 对象
         SaTokenEventCenter.doSetStpLogic(stpLogic);
-    }
-
-    /**
-     * 获取 StpLogic 对象
-     *
-     * @return /
-     */
-    public static StpLogic getStpLogic() {
-        return stpLogic;
     }
 
 

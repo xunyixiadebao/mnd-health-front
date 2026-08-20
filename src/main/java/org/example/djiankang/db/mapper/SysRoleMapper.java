@@ -1,6 +1,7 @@
 package org.example.djiankang.db.mapper;
 
-import org.example.djiankang.db.entity.SysRoleEntity;
+import java.util.List;
+import java.util.Map;
 
 /**
 * @author zl
@@ -9,7 +10,12 @@ import org.example.djiankang.db.entity.SysRoleEntity;
 * @Entity org.example.djiankang.db.entity.SysRoleEntity
 */
 public interface SysRoleMapper {
-
+    /**
+     * 查询所有角色
+     *
+     * @return 角色列表
+     */
+    List<Map<String, Object>> selectAll();
 }
 
 
