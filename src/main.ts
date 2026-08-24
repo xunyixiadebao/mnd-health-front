@@ -13,7 +13,8 @@ import "virtual:svg-icons-register";
 const app = createApp(App);
 // 使用路由
 app.use(router);
-
+const minioUrl = "http://82.156.211.164:9000/mnd-health";
+app.provide("minioUrl", minioUrl);
 // 使用 Element Plus，并配置中文语言
 app.use(ElementPlus, { locale: zhCn });
 

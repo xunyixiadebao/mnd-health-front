@@ -14,6 +14,33 @@ const router = createRouter({
           name: "FrontIndex",
           component: () => import("../views/front/index.vue"),
         },
+        {
+          path: "goods/:id",
+          name: "FrontGoods",
+          component: () => import("@/views/front/goods.vue"),
+        },
+        {
+          path: "goods_list",
+          name: "FrontGoodsList",
+          component: () => import("@/views/front/goods_list.vue"),
+        },
+        {
+          path: "customer",
+          name: "FrontCustomer",
+          component: () => import("@/views/front/customer.vue"),
+          children: [
+            {
+              path: "mine",
+              name: "FrontMine",
+              component: () => import("@/views/front/mine.vue"),
+            },
+            {
+              path: "order_list",
+              name: "FrontOrderList",
+              component: () => import("@/views/front/order_list.vue"),
+            },
+          ],
+        },
       ],
     },
     {
@@ -53,6 +80,15 @@ const router = createRouter({
           component: () => import("@/views/mis/user.vue"),
           meta: {
             title: "用户管理",
+            isTab: true,
+          },
+        },
+        {
+          path: "goods",
+          name: "MisGoods",
+          component: () => import("@/views/mis/goods.vue"),
+          meta: {
+            title: "体检套餐",
             isTab: true,
           },
         },

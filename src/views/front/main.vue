@@ -44,7 +44,26 @@ class="tag" 将来可以设置样式。比如外补丁。
         </div>
       </div>
       <div class="actions-container">
-        <el-button type="primary" size="large"> 登录/注册 </el-button>
+        <el-button
+          type="primary"
+          size="large"
+          v-if="dialog.status == 'logout'"
+          @click="showDialog"
+        >
+          登录/注册
+        </el-button>
+        <div
+          class="btn"
+          v-if="dialog.status == 'login'"
+          @click="router.push({ name: 'FrontMine' })"
+        >
+          <el-icon><User /></el-icon>
+          <span>个人中心</span>
+        </div>
+        <div class="btn" v-if="dialog.status == 'login'" @click="logout">
+          <el-icon><SwitchButton /></el-icon>
+          <span>退出系统</span>
+        </div>
       </div>
     </header>
     <!-- 二级路由出口 -->
@@ -146,6 +165,58 @@ class="tag" 将来可以设置样式。比如外补丁。
       </ul>
     </div>
   </footer>
+  <el-dialog
+    v-model="dialog.visible"
+    title="手机快速登录"
+    width="400"
+    class="dialog"
+  >
+    <el-row>
+      <el-col :span="24">
+        <el-input
+          v-model="dialog.phone"
+          placeholder="输入手机号快捷登录"
+          size="large"
+          maxlength="11"
+          clearable
+        >
+          <template #prepend>
+            <el-icon><Iphone /></el-icon>
+          </template>
+        </el-input>
+      </el-col>
+    </el-row>
+    <el-row :gutter="10">
+      <el-col :span="16">
+        <el-input
+          v-model="dialog.code"
+          placeholder="输入短信验证码"
+          size="large"
+          maxlength="6"
+          clearable
+        >
+          <template #prepend>
+            <el-icon><Message /></el-icon>
+          </template>
+        </el-input>
+      </el-col>
+      <el-col :span="8">
+        <el-button
+          size="large"
+          class="receive-btn"
+          type="primary"
+          plain
+          @click="sendSmsCode"
+          :disabled="dialog.disabled"
+        >
+          {{ dialog.btnContent }}
+        </el-button>
+      </el-col>
+    </el-row>
+    <el-button type="primary" class="login-btn" size="large" @click="login">
+      登录系统
+    </el-button>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -177,6 +248,35 @@ const header = reactive({
     },
   ] as const,
 });
+
+import { isPhone, stringIsEmpty, isSmsCode } from "../../utils/validate";
+import { Iphone,Message } from "@element-plus/icons-vue";
+
+const dialog = reactive({
+  visible: false,
+  phone: null,
+  code: null,
+  disabled: false,
+  btnContent: "获取短信验证码",
+  num: 0,
+  status: "logout",
+});
+
+const dataRule = reactive({
+  phone: [
+    { required: true, pattern: "^1[1-9]\d{9}$", message: "手机号码错误" },
+  ],
+});
+
+const sendSmsCode = () => {};
+const login = () => {};
+// 显示弹窗
+const showDialog = () => {
+  dialog.visible = true;
+};
+const logout = () => {};
+
+
 </script>
 
 <style lang="less" scoped>
