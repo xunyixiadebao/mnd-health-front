@@ -218,7 +218,7 @@
           <el-button
             type="text"
             v-if="isAuth(['ROOT', 'USER:UPDATE'])"
-            :disabled="scope.row.status === '离职' || scope.row.isSuperAdmin"
+            :disabled="scope.row.userStatus === '离职' || scope.row.isSuperAdmin"
             @click="dismissHandle(scope.row.userId)"
           >
             离职
