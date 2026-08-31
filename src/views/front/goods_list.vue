@@ -70,6 +70,11 @@
     </div>
   </div>
   <div class="goods-container">
+    <el-empty
+      description="无体检套餐"
+      :image-size="200"
+      v-if="data.dataList.length == 0"
+    ></el-empty>
     <!-- 商品列表容器，使用v-infinite-scroll指令实现无限滚动加载 -->
     <ul class="goods-list" v-infinite-scroll="load">
       <!-- 遍历商品数据列表，生成商品项 -->
@@ -83,7 +88,7 @@
           <!-- 商品图片 -->
           <img :src="one.coverImage" />
           <!-- 商品标题 -->
-          <h4>{{ one.title }}</h4>
+          <h4>{{ one.packageName }}</h4>
           <!-- 商品描述，使用Element Plus的提示框组件 -->
           <el-tooltip class="box-item" effect="dark" placement="top">
             <template #content>
@@ -117,15 +122,19 @@
   </div>
 </template>
 <script lang="ts" setup>
+import router from "@/router";
+import axios from "axios";
 import { reactive, ref, getCurrentInstance } from "vue";
 
 let radio = ref();
+//滚动到页面的顶部，否则路由跳转页面之后，页面垂直位置还是上一个页面的地方
+window.scrollTo(0, 0);
 
 const priceOrder = reactive({
   icon: "sort-default", // sort-asc 升序图标。sort-desc 降序图标。
 });
 
-const dataForm = reactive({
+const dataForm: any = reactive({
   keyword: null,
   type: null,
   sex: null,
@@ -158,80 +167,133 @@ const condition = reactive({
 import { inject } from "vue";
 
 const minioUrl = inject("minioUrl");
+interface Goods {
+  id: number;
+  packageName: string;
+  coverImage: string;
+  description: string;
+  currentPrice: number;
+  originalPrice: number;
+  salesVolume: number;
+}
+
 const data = reactive({
-  dataList: [
-    {
-      id: 1,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 2,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 3,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 4,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 5,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 6,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-  ],
-  pageIndex: 0, // 这个是当前页码，为什么从0开始，mis端都是从1开始呀。这个后面再说。
+  dataList: [] as Goods[],
+  pageIndex: 1, // 如果初始值为1，当页面第一次加载时，它会变成2，导致第一页数据丢失。
   pageSize: 12, // 12正好是4的倍数，三行比较好看。
   totalCount: 0,
-  isLast: false, // 是否为最后一页的标记。
+  isLast: false, // 是否为最后一页的标记(当用户在滚动页面时，如果已经加载到最后一页了，isLast值将被设置为true，用来阻止继续发送ajax请求。)
 });
+const loadPageData = async () => {
+  if (data.isLast) return;
 
-const load = () => {};
-const buyHandle = (id: number) => {};
-const selectHandle = (type: string, name: string) => {};
-const selectRadio = () => {};
-const selectPrice = () => {};
+  try {
+    const { data: responseData } = await axios.get("/api/front/goods/list", {
+      params: {
+        keyword: dataForm.keyword,
+        packageType: dataForm.type,
+        sex: dataForm.sex,
+        priceType: dataForm.priceType,
+        orderType: dataForm.orderType,
+        pageNo: data.pageIndex,
+        pageSize: data.pageSize,
+      },
+    });
+
+    const list = responseData.data.pageResult.records;
+
+    if (list.length === 0) {
+      data.isLast = true;
+      data.pageIndex--;
+      return;
+    }
+
+    list.forEach((item: Goods) => {
+      item.coverImage = `${minioUrl}/${item.coverImage}`;
+    });
+
+    data.dataList = [...data.dataList, ...list];
+    data.totalCount = responseData.data.pageResult.total;
+  } catch (error) {
+    console.error("加载商品列表失败:", error);
+  }
+};
+dataForm.keyword = router.currentRoute.value.query.keyword || null;
+loadPageData();
+
+const load = () => {
+  if (data.isLast) return;
+  data.pageIndex++;
+  loadPageData();
+};
+const buyHandle = (id: number) => {
+  router.push({ name: "FrontGoods", params: { id } });
+};
+const selectHandle = (key: string, name: string) => {
+  // 更新选中状态
+  (condition as any)[key].forEach((one: any) => {
+    one.active = one.name === name;
+  });
+
+  // 更新查询参数
+  const isUnlimited = name === "不限";
+
+  if (key === "type") {
+    dataForm.type = isUnlimited ? null : name;
+  } else if (key === "sex") {
+    dataForm.sex = isUnlimited ? null : name;
+  } else if (key === "priceType") {
+    const target = condition[key].find((item) => item.name === name);
+    dataForm.priceType = isUnlimited ? null : target?.value;
+  }
+
+  // 重置分页
+  data.dataList = [];
+  data.isLast = false;
+  data.pageIndex = 1;
+  data.pageSize = 12;
+  data.totalCount = 0;
+
+  // 加载第一页数据
+  loadPageData();
+};
+const selectRadio = (value: any) => {
+  // 按照价格升降序的图标恢复默认
+  priceOrder.icon = "sort-default";
+  // 修改响应式数据
+  dataForm.orderType = value === "最新" ? 1 : value === "销量" ? 2 : null;
+
+  // 重置分页
+  data.dataList = [];
+  data.isLast = false;
+  data.pageIndex = 1;
+  data.pageSize = 12;
+  data.totalCount = 0;
+  // 加载数据
+  loadPageData();
+};
+const selectPrice = () => {
+  // 先把销量和最新单选按钮取消选中。
+  radio.value = null;
+
+  // 然后再维护响应式对象的状态。
+  if (priceOrder.icon === "sort-default" || priceOrder.icon === "sort-desc") {
+    priceOrder.icon = "sort-asc";
+    dataForm.orderType = 3;
+  } else {
+    priceOrder.icon = "sort-desc";
+    dataForm.orderType = 4;
+  }
+
+  // 重置分页
+  data.dataList = [];
+  data.isLast = false;
+  data.pageIndex = 1;
+  data.pageSize = 12;
+  data.totalCount = 0;
+  // 加载数据
+  loadPageData();
+};
 </script>
 
 <style lang="less" scoped>

@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <header>
-      <div class="logo-container">
+      <div class="logo-container" @click="router.push({name : 'FrontIndex'})">
         <img src="../../assets/front/index/logo.png" class="logo" />
         <div>
           <h3>美年大健康</h3>
@@ -19,7 +19,7 @@
             clearable
           >
             <template #append>
-              <el-button>搜索</el-button>
+              <el-button @click="searchGoods">搜索</el-button>
             </template>
           </el-input>
         </div>
@@ -38,6 +38,7 @@ class="tag" 将来可以设置样式。比如外补丁。
             effect="dark"
             class="tag"
             round
+            @click="tagHandle(item.label)"
           >
             {{ item.label }}
           </el-tag>
@@ -251,32 +252,236 @@ const header = reactive({
 
 import { isPhone, stringIsEmpty, isSmsCode } from "../../utils/validate";
 import { Iphone,Message } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+import axios from "axios";
 
-const dialog = reactive({
-  visible: false,
-  phone: null,
-  code: null,
-  disabled: false,
-  btnContent: "获取短信验证码",
-  num: 0,
+// 定义 Dialog 类型
+interface DialogState {
+  visible: boolean;
+  phone: string;
+  code: string;
+  disabled: boolean;
+  btnContent: string;
+  num: number;
+  status: "login" | "logout" | "register";
+  timer: number | undefined;
+}
+
+const dialog: DialogState = reactive({
+  visible: false, // 决定登录弹窗是否可见
+  phone: "", // 用户填写的手机号
+  code: "", // 用户填的验证码
+  disabled: false, // false表示按钮可用，true表示按钮不可用
+  btnContent: "获取短信验证码", // 按钮上显示的文本
+  num: 0, // 倒计时用的
   status: "logout",
+  timer: undefined,
 });
 
-const dataRule = reactive({
-  phone: [
-    { required: true, pattern: "^1[1-9]\d{9}$", message: "手机号码错误" },
-  ],
-});
+// 发送短信验证码
+const sendSmsCode = async () => {
+  const phone = dialog.phone;
 
-const sendSmsCode = () => {};
-const login = () => {};
+  // 1. 表单校验
+  if (stringIsEmpty(phone)) {
+    ElMessage.error({
+      message: "请填写手机号",
+      duration: 1200,
+    });
+    return;
+  }
+
+  if (!isPhone(phone)) {
+    ElMessage.error({
+      message: "手机号格式错误",
+      duration: 1200,
+    });
+    return;
+  }
+
+  // 2. 防止重复点击
+  if (dialog.disabled) {
+    return;
+  }
+
+  try {
+    // 3. 发送请求
+    const response = await axios.post("/api/front/customer/sms-codes", {
+      phone,
+    });
+    const result = response.data.data.result;
+    const msg = response.data.msg;
+
+    if (result) {
+      // 4. 提示成功
+      ElMessage.success({
+        message: msg || "短信已发送",
+        duration: 1200,
+      });
+
+      // 5. 倒计时
+      let remaining = 60;
+
+      dialog.disabled = true;
+      dialog.btnContent = `${remaining}秒后重新获取`;
+
+      // 清除旧定时器
+      if (dialog.timer) {
+        clearInterval(dialog.timer);
+      }
+
+      dialog.timer = setInterval(() => {
+        remaining--;
+
+        if (remaining > 0) {
+          dialog.btnContent = `${remaining}秒后重新获取`;
+        } else {
+          dialog.disabled = false;
+          dialog.btnContent = "获取短信验证码";
+          clearInterval(dialog.timer);
+          dialog.timer = undefined;
+        }
+      }, 1000);
+    } else {
+      ElMessage.error({
+        message: msg || "短信发送失败，请稍后重试",
+        duration: 1200,
+      });
+    }
+  } catch (error) {
+    ElMessage.error({
+      message: "网络异常，请稍后重试",
+      duration: 1200,
+    });
+  }
+};
+const login = async () => {
+  const { phone, code } = dialog;
+
+  if (stringIsEmpty(phone)) {
+    ElMessage.error({ message: "填写手机号", duration: 1200 });
+    return;
+  }
+
+  if (!isPhone(phone)) {
+    ElMessage.error({ message: "手机号格式错误", duration: 1200 });
+    return;
+  }
+
+  if (stringIsEmpty(code)) {
+    ElMessage.error({ message: "填写验证码", duration: 1200 });
+    return;
+  }
+
+  if (!isSmsCode(code)) {
+    ElMessage.error({ message: "验证码格式错误", duration: 1200 });
+    return;
+  }
+
+  try {
+    const { data } = await axios.post("/api/front/customer/login", {
+      phone,
+      code,
+    });
+    const { code: statusCode, msg, data: responseData } = data;
+
+    if (statusCode === 200 && responseData?.result) {
+      Object.assign(dialog, {
+        phone: null,
+        code: null,
+        visible: false,
+        status: "login",
+      });
+
+      localStorage.setItem("token", responseData.token);
+      ElMessage.success({ message: msg || "登录成功", duration: 1200 });
+    } else {
+      ElMessage.error({ message: msg || "登录失败，请重试", duration: 1200 });
+    }
+  } catch (error) {
+    console.error("登录请求失败:", error);
+    ElMessage.error({ message: "网络异常，请稍后重试", duration: 1200 });
+  }
+};
+const checkLogin = async () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    dialog.status = "logout";
+    return;
+  }
+
+  try {
+    const response = await axios.get("/api/front/customer/auth/status", {
+      headers: { satoken: token },
+    });
+
+    const respData = response.data;
+    // 如果 respData.data不为null和undefined就继续访问result
+    // 如果result有值就会返回值本身，如果result是null或undefined则返回false。
+    const isLogin = respData.data?.result ?? false;
+    dialog.status = isLogin ? "login" : "logout";
+
+    if (!isLogin) {
+      localStorage.removeItem("token");
+    }
+  } catch (error) {
+    console.error("检查登录状态失败:", error);
+    dialog.status = "logout";
+    localStorage.removeItem("token");
+  }
+};
+
+// 立即调用
+checkLogin();
 // 显示弹窗
 const showDialog = () => {
   dialog.visible = true;
 };
-const logout = () => {};
+const logout = async () => {
+  try {
+    const token = localStorage.getItem("token");
 
+    if (!token) {
+      dialog.status = "logout";
+      router.push({ name: "FrontIndex" });
+      return;
+    }
 
+    await axios.delete("/api/front/customer/auth/session", {
+      headers: { satoken: token },
+    });
+    localStorage.removeItem("token");
+    dialog.status = "logout";
+    router.push({ name: "FrontIndex" });
+
+    ElMessage.success({
+      message: "已退出系统",
+      duration: 1200,
+    });
+  } catch (error) {
+    ElMessage.error({
+      message: "退出失败，请稍后重试",
+      duration: 1200,
+    });
+  }
+};
+
+const searchGoods = () => {
+  // 直接路由跳转
+  router.push({
+    name: "FrontGoodsList",
+    query: {
+      keyword: header.keyword,
+      _: new Date().getTime(), // 提交时间戳，避免走缓存。
+    },
+  });
+};
+header.keyword = router.currentRoute.value.query.keyword as string;
+// 将标签中的内容设置到搜索框中。
+const tagHandle = (tagLabel: string) => {
+  header.keyword = tagLabel;
+};
 </script>
 
 <style lang="less" scoped>

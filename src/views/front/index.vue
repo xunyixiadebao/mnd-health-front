@@ -41,7 +41,7 @@
       <li class="item" v-for="one in data.part_1">
         <div class="card">
           <img :src="one.coverImage" />
-          <h4>{{ one.title }}</h4>
+          <h4>{{ one.packageName }}</h4>
           <el-tooltip class="box-item" effect="dark" placement="top">
             <template #content>
               <div style="width: 260px">{{ one.description }}</div>
@@ -78,7 +78,7 @@
       <li class="item" v-for="one in data.part_2">
         <div class="card">
           <img :src="one.coverImage" />
-          <h4>{{ one.title }}</h4>
+          <h4>{{ one.packageName }}</h4>
           <el-tooltip class="box-item" effect="dark" placement="top">
             <template #content>
               <div style="width: 260px">{{ one.description }}</div>
@@ -115,7 +115,7 @@
       <li class="item" v-for="one in data.part_3">
         <div class="card">
           <img :src="one.coverImage" />
-          <h4>{{ one.title }}</h4>
+          <h4>{{ one.packageName }}</h4>
           <el-tooltip class="box-item" effect="dark" placement="top">
             <template #content>
               <div style="width: 260px">{{ one.description }}</div>
@@ -219,141 +219,57 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, getCurrentInstance, inject } from "vue";
+import { reactive, inject } from "vue";
 import { Plus } from "@element-plus/icons-vue";
-import router from "../../router/index";
+import axios from "axios";
+import router from "@/router";
 const minioUrl = inject("minioUrl");
-const data = reactive({
-  part_1: [
-    {
-      id: 1,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 2,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 3,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 4,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-  ],
-  part_2: [
-    {
-      id: 5,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 6,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 7,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 8,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-  ],
-  part_3: [
-    {
-      id: 9,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 10,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 11,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-    {
-      id: 12,
-      title: "银龄关怀健康呵护套餐",
-      coverImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      description:
-        "「感恩回馈季 到检享优惠」适用对象：中老年群体及心血管健康关注者 （参与买一赠一活动 需在购物车内选择2件商品）",
-      currentPrice: 5000.0,
-      originalPrice: 8000.0,
-      salesVolume: 888,
-    },
-  ],
-});
 
-const moreHandle = () => {};
-const buyHandle = (id: number) => {};
+interface Goods {
+  id: number;
+  packageName: string;
+  coverImage: string;
+  description: string;
+  currentPrice: number;
+  originalPrice: number;
+  salesVolume: number;
+}
+
+const data = reactive({
+  part_1: [] as Goods[],
+  part_2: [] as Goods[],
+  part_3: [] as Goods[],
+});
+const loadTop4 = async () => {
+  try {
+    const { data: responseData } = await axios.post("/api/front/goods/top4", {
+      categoryIds: [1, 2, 3],
+    });
+
+    const top4 = responseData.data.top4;
+
+    Object.keys(top4).forEach((key) => {
+      
+      // 遍历每个套餐，将套餐中的 coverImage 的相对路径修改为绝对路径。
+      top4[key].forEach((item: Goods) => {
+        item.coverImage = `${minioUrl}/${item.coverImage}`;
+      });
+      
+      (data as any)[`part_${key}`] = top4[key];
+    });
+  } catch (error) {
+    console.error("加载Top4套餐失败:", error);
+  }
+};
+
+loadTop4();
+
+const moreHandle = () => {
+  router.push({ name: "FrontGoodsList"});
+};
+const buyHandle = (id: number) => {
+  router.push({ name: "FrontGoods", params: { id } });
+};
 </script>
 
 <style lang="less" scoped>

@@ -120,13 +120,14 @@ import { reactive, ref, type Ref, getCurrentInstance, inject } from "vue";
 import { Search } from "@element-plus/icons-vue";
 import router from "../../router/index";
 
-import { dayjs } from "element-plus";
+import { dayjs, ElMessage, ElMessageBox } from "element-plus";
 import isBetween from "dayjs/plugin/isBetween";
+import axios from "axios";
 dayjs.extend(isBetween);
 
 let empty = ref(false);
 
-const dataForm = reactive({
+const dataForm : any = reactive({
   keyword: null,
   statusLabel: "全部",
   status: null,
@@ -143,70 +144,128 @@ const dataRule = reactive({
 });
 
 const minioUrl = inject("minioUrl");
-const data: any = reactive({
-  dataList: [
-    {
-      createTime: "2025-10-01 10:10:10",
-      outTradeNo: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-      snapshotId: "888888",
-      goodsImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      goodsTitle: "公司白领体检套餐",
-      goodsDescription:
-        "「感恩季到检钜惠」适合人群：适用于中、青年人白领及熬夜党 （参加第二件0元活动 需加入购物车后数量选2）",
-      goodsPrice: 5000,
-      quantity: 4,
-      totalAmount: 20000,
-      orderStatus: "已付款",
-    },
-    {
-      createTime: "2025-10-01 10:10:10",
-      outTradeNo: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-      snapshotId: "888888",
-      goodsImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      goodsTitle: "公司白领体检套餐",
-      goodsDescription:
-        "「感恩季到检钜惠」适合人群：适用于中、青年人白领及熬夜党 （参加第二件0元活动 需加入购物车后数量选2）",
-      goodsPrice: 5000,
-      quantity: 4,
-      totalAmount: 20000,
-      orderStatus: "已付款",
-    },
-    {
-      createTime: "2025-10-01 10:10:10",
-      outTradeNo: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-      snapshotId: "888888",
-      goodsImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      goodsTitle: "公司白领体检套餐",
-      goodsDescription:
-        "「感恩季到检钜惠」适合人群：适用于中、青年人白领及熬夜党 （参加第二件0元活动 需加入购物车后数量选2）",
-      goodsPrice: 5000,
-      quantity: 4,
-      totalAmount: 20000,
-      orderStatus: "已付款",
-    },
-    {
-      createTime: "2025-10-01 10:10:10",
-      outTradeNo: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-      snapshotId: "888888",
-      goodsImage: `${minioUrl}/front/goods/d079bf3cfbe64aa9b5e17a2e77244bb7.jpg`,
-      goodsTitle: "公司白领体检套餐",
-      goodsDescription:
-        "「感恩季到检钜惠」适合人群：适用于中、青年人白领及熬夜党 （参加第二件0元活动 需加入购物车后数量选2）",
-      goodsPrice: 5000,
-      quantity: 4,
-      totalAmount: 20000,
-      orderStatus: "已付款",
-    },
-  ],
+interface Order {
+  createTime: string,
+  outTradeNo: string,
+  snapshotId: string,
+  goodsImage: string,
+  goodsTitle: string,
+  goodsDescription: string,
+  goodsPrice: number,
+  quantity: number,
+  totalAmount: number,
+  orderStatus: string,
+  disabled: boolean,
+  appointCount: number,
+  id: number
+}
+interface Data {
+  dataList: Order[],
+  pageIndex: number,
+  pageSize: number,
+  totalCount: number,
+  loading: boolean,
+}
+const data: Data = reactive({
+  dataList: [],
   pageIndex: 1,
   pageSize: 10,
   totalCount: 0,
   loading: false,
 });
+const loadPageList = async () => {
+  // 显示加载进度条
+  data.loading = true;
 
-const sizeChangeHandle = () => {};
-const currentChangeHandle = () => {};
-const refundHandle = (id: number) => {};
+  try {
+    // 根据用户的选择，设置订单状态值
+    if (dataForm.statusLabel === "全部") {
+      dataForm.status = null;
+    } else if (dataForm.statusLabel === "未付款") {
+      dataForm.status = 1;
+    } else {
+      dataForm.status = 3;
+    }
+
+    // 发送ajax请求
+    const response = await axios.get("/api/front/order/list", {
+      params: {
+        keyword: dataForm.keyword,
+        orderStatus: dataForm.status,
+        pageNo: data.pageIndex,
+        pageSize: data.pageSize,
+      },
+      headers: {
+        satoken: localStorage.getItem("token"),
+      },
+    });
+
+    const pageResult = response.data.data?.result;
+
+    const statusEnum: Record<string, string> = {
+      "1": "未付款",
+      "2": "已关闭",
+      "3": "已付款",
+      "4": "已退款",
+      "5": "已预约",
+      "6": "已结束",
+    };
+
+    const list = pageResult.records || [];
+    for (let one of list) {
+      one.goodsImage = `${minioUrl}/${one.goodsImage}`;
+      one.orderStatus = statusEnum[one.orderStatus + ""];
+    }
+
+    data.dataList = list;
+    data.totalCount = pageResult.total || 0;
+    empty.value = list.length === 0;
+  } catch (error) {
+    console.error("加载订单列表失败:", error);
+    ElMessage.error("网络异常，请稍后再试");
+  } finally {
+    data.loading = false;
+  }
+};
+
+loadPageList();
+
+const refundHandle = async (orderId: number) => {
+  try {
+    await ElMessageBox.confirm("您确定要退款吗？", "提示信息", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+    });
+
+    const { data: responseData } = await axios.put(
+      "/api/front/order/refund",
+      { orderId },
+      {
+        headers: {
+          satoken: localStorage.getItem("token"),
+        },
+      },
+    );
+    if (responseData.code === 200) {
+      ElMessage.success({
+        message: "退款申请已提交，请稍后查看到账情况",
+        duration: 1200,
+      });
+    } else {
+      ElMessage.error({
+        message: "退款失败，请联系客服",
+        duration: 1200,
+      });
+    }
+  } catch (error) {
+    if (error === "cancel") return;
+    ElMessage.error({
+      message: "退款失败，请联系客服",
+      duration: 1200,
+    });
+  }
+};
 const appointHandle = (
   id: number,
   quantity: number,
@@ -214,7 +273,27 @@ const appointHandle = (
 ) => {};
 const closeOrderHandle = (id: number) => {};
 const paymentHandle = (no: string) => {};
-const searchHandle = () => {};
+const sizeChangeHandle = (pageSize: number) => {
+  data.pageSize = pageSize;
+  data.pageIndex = 1;
+  loadPageList();
+};
+
+const currentChangeHandle = (pageNo: number) => {
+  data.pageIndex = pageNo;
+  loadPageList();
+};
+const form = ref();
+const searchHandle = async () => {
+  try {
+    await form.value.validate();
+    // 重置页码并加载数据
+    data.pageIndex = 1;
+    loadPageList();
+  } catch {
+    // 验证失败，不做任何操作
+  }
+};
 const searchDetailHandle = (snapshotId: string) => {};
 </script>
 <style lang="less" scoped>

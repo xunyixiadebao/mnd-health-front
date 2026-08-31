@@ -342,10 +342,58 @@
       </div>
     </fieldset>
   </div>
+  <el-dialog
+    title="购买体检套餐"
+    :close-on-click-modal="false"
+    v-model="dialog.visible"
+    width="305px"
+    center
+  >
+    <img :src="dialog.qrCode" class="qrCode" v-if="!dialog.result" />
+
+    <div v-if="dialog.result" class="pay-success">
+      <el-result
+        icon="success"
+        title="付款成功"
+        subTitle="请根据提示进行操作"
+      ></el-result>
+    </div>
+
+    <div class="dialog-footer-style">
+      <el-button
+        type="danger"
+        size="default"
+        v-if="!dialog.result"
+        @click="closeHandle"
+        >取消支付</el-button
+      >
+      <el-button
+        type="primary"
+        size="default"
+        v-if="!dialog.result"
+        @click="successHandle"
+        >支付成功</el-button
+      >
+      <el-button
+        type="primary"
+        size="default"
+        v-if="dialog.result"
+        @click="closeHandle"
+        >关闭窗口</el-button
+      >
+    </div>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref, type Ref, getCurrentInstance, onMounted, inject } from "vue";
+import {
+  reactive,
+  ref,
+  type Ref,
+  getCurrentInstance,
+  onMounted,
+  inject,
+} from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import router from "../../router/index";
 import axios from "axios";
@@ -354,7 +402,7 @@ const dataForm = reactive({
   number: 1,
 });
 
-const data : any = reactive({
+const data: any = reactive({
   packageCode: null,
   packageName: null,
   description: null,
@@ -460,10 +508,134 @@ const loadPreviewPage = async () => {
 
 // 页面打开时立即执行。
 loadPreviewPage();
+interface Dialog {
+  visible: boolean;
+  result: boolean;
+  qrCode: string | undefined;
+  outTradeNo: null;
+}
 
+const dialog: Dialog = reactive({
+  visible: false,
+  result: false,
+  qrCode: undefined,
+  //订单流水号，查询付款结果时候使用
+  outTradeNo: null,
+});
+
+const closeHandle = () => {
+  dialog.visible = false;
+};
+const successHandle = async () => {
+  try {
+    const response = await axios.get("/api/front/order/payment-result", {
+      params: { outTradeNo: dialog.outTradeNo },
+      headers: { satoken: localStorage.getItem("token") },
+    });
+    const result = response.data.data.paid;
+    if (result) {
+      dialog.result = true;
+      // 移除 WebSocket 监听
+      if (proxy.$socket) {
+        proxy.$socket.onmessage = null;
+      }
+    } else {
+      ElMessage.error("支付尚未完成，请稍后重试");
+    }
+  } catch (error) {
+    console.error("查询支付结果失败:", error);
+    ElMessage.error("查询支付结果失败，请稍后重试");
+  }
+};
 const handleChange = () => {};
 const consultHandle = () => {};
-const createPayment = () => {};
+
+async function createPayment() {
+  dialog.outTradeNo = null;
+  dialog.qrCode = undefined;
+  dialog.result = false;
+
+  try {
+    // 1. 检查用户是否登录
+    const { data: loginResp } = await axios.get(
+      "/api/front/customer/auth/status",
+      {
+        headers: { satoken: localStorage.getItem("token") },
+      },
+    );
+
+    if (!loginResp.data.result) {
+      ElMessage.warning("请先登录系统");
+      return;
+    }
+
+    // 2. 用户确认购买
+    await ElMessageBox.confirm("您确定购买该体检套餐？", "提示信息", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "info",
+    });
+
+    // 3. 创建订单
+    const goodsId = router.currentRoute.value.params.id;
+    const { data: resp } = await axios.post(
+      "/api/front/order",
+      { goodsId, buyCount: dataForm.number },
+      { headers: { satoken: localStorage.getItem("token") } },
+    );
+
+    // 4. 处理响应
+    if (resp.data.illegal) {
+      ElMessageBox.alert(
+        "今日您的未支付订单或退款订单已达到上限，导致今日不能再下单。请明日再来购买体检套餐！",
+        "提示信息",
+        { type: "warning" },
+      );
+      return;
+    }
+
+    // 5. 展示二维码
+    dialog.visible = true;
+    dialog.outTradeNo = resp.data.result.outTradeNo;
+    dialog.qrCode = resp.data.result.qrCodeBase64;
+
+    // 监听到服务器推送消息过来之后，执行这个回调函数
+    const handlePaymentMessage = (event: MessageEvent) => {
+      // 服务器响应回来的是json字符串要转换成对象
+      const data = JSON.parse(event.data);
+      if (data.result) {
+        // 支付成功，更新弹窗状态
+        dialog.result = true;
+        // 移除监听，避免重复触发
+        proxy.$socket.removeEventListener("message", handlePaymentMessage);
+      }
+    };
+    // 绑定监听
+    proxy.$socket?.addEventListener("message", handlePaymentMessage);
+  } catch (error) {
+    // 用户取消确认框会抛出 'cancel'，忽略
+    if (error !== "cancel") {
+      console.error("创建支付订单失败:", error);
+      ElMessage.error("创建订单失败，请稍后重试");
+    }
+  }
+}
+const { proxy } = getCurrentInstance() as any;
+
+onMounted(() => {
+  // 页面加载时立即进行 WebSocket 认证
+  const token = localStorage.getItem("token");
+  if (token) {
+    // 发送消息给websocket服务器。
+    // $socket 属性来自 vue-native-websocket-vue3 插件。
+    // 这个插件会自动注入 $socket 到 Vue 应用实例中
+    proxy.$socket.sendObj({
+      opt: "register",
+      identity: "customer",
+      token: token,
+    });
+  }
+});
 </script>
 
 <style lang="less" scoped>

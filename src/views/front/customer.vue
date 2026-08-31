@@ -1,6 +1,10 @@
 <template>
   <div class="customer-container">
-    <el-menu :default-active="active" class="menu" @select="selectHandle">
+    <el-menu 
+      :default-active="active" 
+      class="menu" 
+      @select="selectHandle"
+    >
       <el-menu-item index="FrontMine">
         <el-icon>
           <User />
@@ -27,18 +31,25 @@
       </el-menu-item>
     </el-menu>
     <div class="content">
-      <!-- 三级路由出口 -->
       <RouterView />
     </div>
   </div>
 </template>
+
 <script lang="ts" setup>
-import { reactive, ref, type Ref, getCurrentInstance } from "vue";
+import router from "@/router";
+import { ref } from "vue";
+import { useRoute } from 'vue-router';
 
-// 响应式对象决定哪个被菜单被激活。
-let active = ref("FrontMine");
+// 获取当前路由
+const route = useRoute();
+// 使用当前路由名称作为激活菜单项，如果不存在则使用默认值
+const active = ref<string>(route.name as string || 'FrontMine');
 
-const selectHandle = () => {};
+// 菜单选择处理函数
+function selectHandle(index: string) {
+  router.push({ name: index });
+}
 </script>
 
 <style lang="less" scoped>
